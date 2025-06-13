@@ -34,12 +34,20 @@ def health_check():
     return {"status": "healthy"}
 
 # Include routers from different modules
-# app.include_router(auth_router, prefix="/auth", tags=["Authentication"])
-# app.include_router(users_router, prefix="/users", tags=["Users"])
-# app.include_router(properties_router, prefix="/properties", tags=["Properties"])
-# app.include_router(invoices_router, prefix="/invoices", tags=["Invoices"])
-# app.include_router(payments_router, prefix="/payments", tags=["Payments"])
-# app.include_router(access_router, prefix="/access", tags=["Access Control"])
+from .routes import auth, users, properties, invoices, payments, access, expenses, visitors, qr_access, hardware_simulation, gate_schedule, notifications
+
+app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+app.include_router(users.router, prefix="/users", tags=["Users"])
+app.include_router(properties.router, prefix="/properties", tags=["Properties"])
+app.include_router(invoices.router, prefix="/invoices", tags=["Invoices"])
+app.include_router(payments.router, prefix="/payments", tags=["Payments"])
+app.include_router(access.router, prefix="/access", tags=["Access Control"])
+app.include_router(expenses.router, prefix="/expenses", tags=["Expenses"])
+app.include_router(visitors.router, prefix="/visitors", tags=["Visitor Management"])
+app.include_router(qr_access.router, prefix="/qr", tags=["QR Code Access"])
+app.include_router(hardware_simulation.router, prefix="/hardware", tags=["Hardware Simulation"])
+app.include_router(gate_schedule.router, prefix="/gate-schedules", tags=["Gate Scheduling"])
+app.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
 
 # Error handlers
 @app.exception_handler(HTTPException)

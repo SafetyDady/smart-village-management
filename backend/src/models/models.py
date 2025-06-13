@@ -1,10 +1,11 @@
-from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, ForeignKey, Text, Enum, JSON
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, Integer, Float, Boolean, DateTime, ForeignKey, Text, Enum, JSON, Time, ARRAY
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import uuid
 import enum
+from datetime import datetime, time
 
 Base = declarative_base()
 
@@ -27,6 +28,8 @@ class Village(Base):
     expense_categories = relationship("ExpenseCategory", back_populates="village")
     access_logs = relationship("AccessLog", back_populates="village")
     visitors = relationship("Visitor", back_populates="village")
+    gate_schedules = relationship("GateSchedule", back_populates="village")
+    gate_overrides = relationship("GateOverride", back_populates="village")
 
 class UserRole(str, enum.Enum):
     ADMIN = "admin"
@@ -56,6 +59,8 @@ class User(Base):
     village = relationship("Village", back_populates="users")
     owned_properties = relationship("Property", back_populates="owner")
     access_logs = relationship("AccessLog", back_populates="user")
+    created_gate_schedules = relationship("GateSchedule", back_populates="created_by_user")
+    created_gate_overrides = relationship("GateOverride", back_populates="created_by_user")
 
 class PropertyStatus(str, enum.Enum):
     OCCUPIED = "occupied"
@@ -213,3 +218,64 @@ class Visitor(Base):
     # Relationships
     village = relationship("Village", back_populates="visitors")
     property = relationship("Property", back_populates="visitors")
+
+class GateOperationMode(str, enum.Enum):
+    STAFF_ASSISTED = "staff_assisted"
+    AUTOMATED = "automated"
+
+class GateSchedule(Base):
+    """
+    Model for gate operation schedules
+    """
+    __tablename__ = "gate_schedules"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    village_id = Column(UUID(as_uuid=True), ForeignKey("villages.id"), nullable=False, index=True)
+    gate_id = Column(String, nullable=False, index=True)  # e.g., "main_gate", "secondary_gate"
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    
+    # Operation mode: "staff_assisted" or "automated"
+    operation_mode = Column(Enum(GateOperationMode), nullable=False)
+    
+    # Schedule timing
+    days_of_week = Column(ARRAY(Integer), nullable=False)  # 0=Monday, 6=Sunday
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+    
+    # Metadata
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    
+    # Additional settings (JSON)
+    settings = Column(JSONB, nullable=True)
+    
+    # Relationships
+    village = relationship("Village", back_populates="gate_schedules")
+    created_by_user = relationship("User", back_populates="created_gate_schedules")
+
+class GateOverride(Base):
+    """
+    Model for temporary gate operation mode overrides
+    """
+    __tablename__ = "gate_overrides"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    village_id = Column(UUID(as_uuid=True), ForeignKey("villages.id"), nullable=False, index=True)
+    gate_id = Column(String, nullable=False, index=True)
+    
+    # Operation mode: "staff_assisted" or "automated"
+    operation_mode = Column(Enum(GateOperationMode), nullable=False)
+    
+    # When this override expires
+    expiry_time = Column(DateTime(timezone=True), nullable=False)
+    
+    # Who created this override
+    created_by = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationships
+    village = relationship("Village", back_populates="gate_overrides")
+    created_by_user = relationship("User", back_populates="created_gate_overrides")
+
