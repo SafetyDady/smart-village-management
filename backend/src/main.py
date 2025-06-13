@@ -35,8 +35,11 @@ def health_check():
 
 # Include routers from different modules
 from .routes import auth, users, properties, invoices, payments, access, expenses, visitors, qr_access, hardware_simulation, gate_schedule, notifications
+from .routes.auth_enhanced import email_verification_router, password_reset_router
 
 app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+app.include_router(email_verification_router, prefix="/auth", tags=["Email Verification"])
+app.include_router(password_reset_router, prefix="/auth", tags=["Password Reset"])
 app.include_router(users.router, prefix="/users", tags=["Users"])
 app.include_router(properties.router, prefix="/properties", tags=["Properties"])
 app.include_router(invoices.router, prefix="/invoices", tags=["Invoices"])

@@ -52,6 +52,13 @@ class User(Base):
     email = Column(String(100), nullable=False)
     phone = Column(String(20), nullable=True)
     status = Column(Enum(UserStatus), default=UserStatus.ACTIVE)
+    # New fields for enhanced user management
+    email_verified = Column(Boolean, default=False)
+    profile_image = Column(String(255), nullable=True)
+    emergency_contact = Column(JSON, nullable=True)
+    login_attempts = Column(Integer, default=0)
+    last_login_attempt = Column(DateTime(timezone=True), nullable=True)
+    account_locked_until = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
@@ -279,3 +286,29 @@ class GateOverride(Base):
     village = relationship("Village", back_populates="gate_overrides")
     created_by_user = relationship("User", back_populates="created_gate_overrides")
 
+# New model for email verification tokens
+class EmailVerificationToken(Base):
+    __tablename__ = "email_verification_tokens"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    token = Column(String(255), nullable=False, unique=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    
+    # Relationships
+    user = relationship("User")
+
+# New model for password reset tokens
+class PasswordResetToken(Base):
+    __tablename__ = "password_reset_tokens"
+    
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    token = Column(String(255), nullable=False, unique=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used = Column(Boolean, default=False)
+    
+    # Relationships
+    user = relationship("User")
